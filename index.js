@@ -83,30 +83,44 @@ class TiltifyClient {
     let results = []
     let keepGoing = true
     while (keepGoing) {
-      let response = await this._doRequest(path)
-      const parsedBody = JSON.parse(response)
-      if (
-        parsedBody.links !== undefined &&
-        parsedBody.links.prev !== undefined
-      ) {
-        path = parsedBody.links.prev.replace('/api/v3/', '').replace('count=100', 'count=500')
-      } else {
-        keepGoing = false
-        callback(parsedBody.data)
-        return
-      }
-      results.push(parsedBody.data)
-      if (parsedBody.data.length === 0) {
-        keepGoing = false
-        let concatResults = []
-        results.forEach(block => {
-          block.forEach(element => {
-            concatResults.push(element)
+      try {
+        let response = await this._doRequest(path)
+        const parsedBody = JSON.parse(response)
+        if (
+          parsedBody.links !== undefined &&
+          parsedBody.links.prev !== undefined
+        ) {
+          path = parsedBody.links.prev.replace('/api/v3/', '').replace('count=100', 'count=500')
+        } else {
+          keepGoing = false
+          callback(parsedBody.data)
+          return
+        }
+        results.push(parsedBody.data)
+        if (parsedBody.data.length === 0) {
+          keepGoing = false
+          let concatResults = []
+          results.forEach(block => {
+            block.forEach(element => {
+              concatResults.push(element)
+            })
           })
-        })
-        callback(concatResults)
+          callback(concatResults)
+        }
+        await this._threadSleep(500)
+      } catch (e) {
+        console.error(e)
+        throw e
       }
     }
+  }
+
+  async _threadSleep (sleep) {
+    return new Promise(function (resolve, reject) {
+      setTimeout(function () {
+        resolve()
+      }, sleep)
+    })
   }
 }
 module.exports = TiltifyClient
